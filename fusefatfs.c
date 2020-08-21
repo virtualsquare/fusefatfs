@@ -91,7 +91,7 @@ static time_t fftime2time(WORD fdate, WORD ftime) {
 		tm.tm_mon = ((fdate >> 5) & 0xf) - 1;
 		tm.tm_mday = fdate & 0x1f;
 
-		tm.tm_hour = (ftime >> 9) & 0x1f;
+		tm.tm_hour = (ftime >> 11) & 0x1f;
 		tm.tm_min = (ftime >> 5) & 0x3f;
 		tm.tm_sec = (ftime & 0x1f) * 2;
 
@@ -433,6 +433,35 @@ err:
 	return fr2errno(fres);
 }
 
+static int fff_utimens(const char *path, const struct timespec tv[2]) {
+	struct fuse_context *cntx=fuse_get_context();
+  struct fftab *ffentry = cntx->private_data;
+  const char fffpath(ffentry->index, path);
+  if (ffentry->flags & FFFF_RDONLY)
+    return -EROFS;
+	FILINFO fno;
+	struct tm tm;
+	time_t newtime = tv[1].tv_sec;
+	if (localtime_r(&newtime, &tm) == NULL)
+		return -EINVAL;
+	fno.fdate =
+		/* bit15:9: Year origin from the 1980 (0..127, e.g. 37 for 2017) */
+		(((tm.tm_year - 80) & 0x7f) << 9) |
+		/* bit8:5: Month (1..12) */
+		(((tm.tm_mon + 1) & 0xf) << 5) |
+		/* bit4:0: Day of the month (1..31) */
+		(tm.tm_mday & 0x1f);
+	fno.ftime =
+		/* bit15:11: Hour (0..23)) */
+		((tm.tm_hour & 0x1f) << 11) |
+		/* bit10:5: Minute (0..59) */
+		((tm.tm_min & 0x3f) << 5) |
+		/* bit4:0 Second / 2 (0..29, e.g. 25 for 50) */
+		((tm.tm_sec & 0x3f) / 2);
+	FRESULT fres = f_utime(fffpath, &fno);
+	return fr2errno(fres);
+}
+
 static struct fftab *fff_init(const char *source, int flags) {
 	int index = fftab_new(source, flags);
 	if (index >= 0) {
@@ -450,8 +479,8 @@ static struct fftab *fff_init(const char *source, int flags) {
 }
 
 static void fff_destroy(struct fftab *ffentry) {
-	char sdrv[3];
-	snprintf(sdrv, 3, "%d:", ffentry->index);
+	char sdrv[12];
+	snprintf(sdrv, 12, "%d:", ffentry->index);
 	f_mount(0, sdrv, 1);
 	fftab_del(ffentry->index);
 }
@@ -471,6 +500,7 @@ static const struct fuse_operations fusefat_ops = {
 	.rmdir          = fff_rmdir,
 	.rename         = fff_rename,
 	.truncate       = fff_truncate,
+	.utimens        = fff_utimens,
 };
 
 static void usage(void)
