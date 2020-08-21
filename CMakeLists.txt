@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.12)
 project(fusefatfs
-    VERSION 0.0.1
+    VERSION 0.1
     DESCRIPTION "fuse/vuos module for fat (12/16/32/exfat)"
     HOMEPAGE_URL "https://github.com/virtualsquare/fusefatfs"
     LANGUAGES C)
 
 include(GNUInstallDirs)
 include(CheckIncludeFile)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 # check availability of headers and libs
 set(HEADERS_REQUIRED fuse.h)
@@ -29,6 +29,7 @@ foreach(THISLIB IN LISTS LIBS_REQUIRED)
   endif()
 endforeach(THISLIB)
 
+configure_file(config.h.in config.h @ONLY)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FORTIFY_SOURCE=2 -O2 -pedantic -Wall -Wextra")
 
 add_definitions(-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -DFFF_ATOMIC)

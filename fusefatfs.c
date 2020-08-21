@@ -28,9 +28,9 @@
 
 #include <ff.h>
 #include <fftable.h>
+#include <config.h>
 
-#define PROGNAME "fusefatfs"
-#define VERSION "0.1"
+int fuse_reentrant_tag = 0;
 
 #define fffpath(index, path) \
   *fffpath; \
