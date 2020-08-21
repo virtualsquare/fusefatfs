@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(fusefatfs
     VERSION 0.0.1
-    DESCRIPTION "fise/vuse module for fat (12/16/32/exfat)"
+    DESCRIPTION "fuse/vuos module for fat (12/16/32/exfat)"
     HOMEPAGE_URL "https://github.com/virtualsquare/fusefatfs"
     LANGUAGES C)
 
@@ -11,7 +11,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # check availability of headers and libs
 set(HEADERS_REQUIRED fuse.h)
-set(LIBS_REQUIRED vdeplug_mod ssl crypto)
+set(LIBS_REQUIRED fuse)
 
 set(CMAKE_REQUIRED_DEFINITIONS -D_FILE_OFFSET_BITS=64)
 
