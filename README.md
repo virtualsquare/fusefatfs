@@ -3,7 +3,7 @@ mount FAT file systems using FUSE anf VUOS/vufuse
 
 This repository generates both the `fusefatfs` command for 
 [FUSE (Filesystem in Userspace)](https://github.com/libfuse/libfuse)
-and the plug-in sumbodule for [VUOS](https://github.com/virtualsquare/vuos).
+and the plug-in submodule for [VUOS](https://github.com/virtualsquare/vuos).
 
 It supports FAT12, FAT16, FAT32 and exFAT formats.
 

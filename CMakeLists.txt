@@ -7,8 +7,7 @@ project(fusefatfs
 
 include(GNUInstallDirs)
 include(CheckIncludeFile)
-set(FATFS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/fatfs/source)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${FATFS_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # check availability of headers and libs
 set(HEADERS_REQUIRED fuse.h)
@@ -32,21 +31,18 @@ endforeach(THISLIB)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FORTIFY_SOURCE=2 -O2 -pedantic -Wall -Wextra")
 
-# add_definitions(-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -DFFF_ATOMIC)
-add_definitions(-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64)
+add_definitions(-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -DFFF_ATOMIC)
+# add_definitions(-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64)
 
-add_executable(fusefatfs fusefatfs.c fftable.c diskio.c
-		${FATFS_SOURCE_DIR}/ff.c ${FATFS_SOURCE_DIR}/ffunicode.c)
+add_executable(fusefatfs fusefatfs.c fftable.c diskio.c ff.c ffunicode.c)
 target_link_libraries(fusefatfs fuse)
 install(TARGETS fusefatfs
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-add_library(vufusefatfs SHARED fusefatfs.c fftable.c diskio.c
-    ${FATFS_SOURCE_DIR}/ff.c ${FATFS_SOURCE_DIR}/ffunicode.c)
-#set_target_properties(vufusefatfs PROPERTIES OUTPUT_NAME vufusefatfs)
+add_library(vufusefatfs SHARED fusefatfs.c fftable.c diskio.c ff.c ffunicode.c)
 set_target_properties(vufusefatfs PROPERTIES PREFIX "")
 install(TARGETS vufusefatfs
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/vu)
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/vu/modules)
 
 add_subdirectory(man)
 
