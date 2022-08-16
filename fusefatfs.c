@@ -589,6 +589,7 @@ int main(int argc, char *argv[])
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 	struct fftab *ffentry;
 	int flags = 0;
+	struct stat sbuf;
 	if (fuse_opt_parse(&args, &options, fff_opts, fff_opt_proc) == -1) {
 		fuse_opt_free_args(&args);
 		return -1;
@@ -603,13 +604,33 @@ int main(int argc, char *argv[])
 				"or: -o rw,force\n\n");
 		options.ro = 1;
 	}
+
+	if (options.source == NULL || options.mountpoint == NULL) {
+		usage();
+		goto returnerr;
+	}
+
+	if (stat(options.source, &sbuf) < 0) {
+		fprintf(stderr, "%s: %s\n", options.source, strerror(errno));
+		goto returnerr;
+	}
+
+	if (! S_ISREG(sbuf.st_mode) && ! S_ISBLK(sbuf.st_mode)) {
+		fprintf(stderr, "%s: source must be a block device or a regular file (image)\n", options.source);
+		goto returnerr;
+	}
+
 	if (options.ro) flags |= FFFF_RDONLY;
 	if ((ffentry = fff_init(options.source, flags)) == NULL) {
-		fuse_opt_free_args(&args);
-		return -1;
+		fprintf(stderr, "Fuse init error\n");
+		goto returnerr;
 	}
 	err = fuse_main(args.argc, args.argv, &fusefat_ops, ffentry);
 	fff_destroy(ffentry);
 	fuse_opt_free_args(&args);
+	if (err) fprintf(stderr, "Fuse error %d\n", err);
 	return err;
+returnerr:
+	fuse_opt_free_args(&args);
+	return -1;
 }
