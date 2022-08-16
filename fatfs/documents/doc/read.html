@@ -32,7 +32,7 @@ FRESULT f_read (
 <dt>buff</dt>
 <dd>Pointer to the buffer to store the read data.</dd>
 <dt>btr</dt>
-<dd>Number of bytes to read in range of <tt>UINT</tt> type.</dd>
+<dd>Number of bytes to read in range of <tt>UINT</tt> type. If you need to read data fast, you should read data in large chunk as possible.</dd>
 <dt>br</dt>
 <dd>Pointer to the <tt>UINT</tt> variable that receives number of bytes read. This value is always valid after the function call regardless of the function return code. If the return value is equal to <tt class="arg">btr</tt>, the function return code should be <tt>FR_OK</tt>.</dd>
 </dl>
