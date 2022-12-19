@@ -1,5 +1,3 @@
-# <!-- -->
-
 <!--
 .\" Copyright (C) 2020 VirtualSquare. Project Leader: Renzo Davoli
 .\"
@@ -25,11 +23,11 @@
 .\"
 -->
 
-## NAME
+# NAME
 
 fusefatfs, vufusefatfs - mount FAT file systems using FUSE anf vufuse
 
-## SYNOPSIS
+# SYNOPSIS
 
 `fusefatfs` [`-hVdfs`] [`-o` _options_ ] *disk_image* *mountpoint*
 
@@ -37,14 +35,14 @@ in a `umvu` session:
 
 `mount -t vufusefatfs` [`-o` _options_ ] *disk_image* *mountpoint*
 
-## DESCRIPTION
+# DESCRIPTION
 
 `fusefatfs` mounts the file tree contained in *disk_image* on the directory *mountpoint* .
 It supports FAT12, FAT16, FAT32 and exFAT formats.
 
 `vufusefatfs` is the VUOS/vufuse submodule of `fusefatfs`
 
-## OPTIONS
+# OPTIONS
 
 `fusefatfs` is build upon FUSE ((Filesystem in Userspace) library.
 the  complete  set  of available options depends upon the specific
@@ -53,52 +51,52 @@ list.
 
 ### general options
 
-  * `-o` opt,[opt...]:
-    FUSE and file specific mount options.
+  `-o` opt,[opt...]
+: FUSE and file specific mount options.
 
-  * `-h`:
-    display a usage and options summary
+  `-h`
+: display a usage and options summary
 
-  * `-V` &nbsp; `--version`:
-    display version
+  `-V` &nbsp; `--version`
+: display version
 
 ### fusefatfs specific options
 
-  * `-ro`:
-    mount the file system in read-only mode.
+  `-ro`
+: mount the file system in read-only mode.
 
-  * `-rw`:
-    mount the file system in read-write mode only if also `-force` is present.
-    Read-write mounting can potentially manage the file system structure so an
-    extra option is required to test the awareness fo the user.
+  `-rw`
+: mount the file system in read-write mode only if also `-force` is present.
+: Read-write mounting can potentially manage the file system structure so an
+: extra option is required to test the awareness fo the user.
 
-  * `-force`:
-    confirm the request of read-write access.
+  `-force`
+: confirm the request of read-write access.
 
-  * `-rw+`:
-    mount the file system in read-write mode, a shortcut of `-rw -force`.
+  `-rw+`
+: mount the file system in read-write mode, a shortcut of `-rw -force`.
 
 ### main FUSE mount options
 
   These options are not valid in VUOS/vufuse.
 
-  * `-d` &nbsp; `-o debug`:
-    enable debug output (implies -f)
+  `-d` &nbsp; `-o debug`
+: enable debug output (implies -f)
 
-  * `-f`:
-    foreground operation
+  `-f`
+: foreground operation
 
-  * `-s`:
-    disable multi-threaded operation
+  `-s`
+: disable multi-threaded operation
 
-## SEE ALSO
+# SEE ALSO
 `fuse`(8), `umvu`(1)
 
-## CREDITS
+# CREDITS
 `fusefatfs` is based on the FAT file system module for embedded sytems `fatfs` 
 developed by ChaN:
 *http://elm-chan.org*.
 
-## AUTHOR
+# AUTHOR
 VirtualSquare. Project leader: Renzo Davoli.
 
