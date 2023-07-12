@@ -32,8 +32,7 @@ endforeach(THISLIB)
 configure_file(config.h.in config.h @ONLY)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FORTIFY_SOURCE=2 -O2 -pedantic -Wall -Wextra")
 
-add_definitions(-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -DFFF_ATOMIC)
-# add_definitions(-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64)
+add_definitions(-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64)
 
 add_executable(fusefatfs fusefatfs.c fftable.c diskio.c ff.c ffunicode.c)
 target_link_libraries(fusefatfs fuse)

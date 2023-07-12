@@ -132,7 +132,6 @@ static int fff_getattr(const char *path, struct stat *stbuf)
 	return 0;
 }
 
-#ifdef FFF_ATOMIC
 static int fff_open(const char *path, struct fuse_file_info *fi){
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
@@ -255,113 +254,6 @@ err:
 	f_closedir(&dp);
 	return fr2errno(fres);
 }
-
-#else  // ! FFF_ATOMIC
-
-static int fff_open(const char *path, struct fuse_file_info *fi){
-	struct fuse_context *cntx=fuse_get_context();
-	struct fftab *ffentry = cntx->private_data;
-	const char fffpath(ffentry->index, path);
-	if ((ffentry->flags & FFFF_RDONLY) && (fi->flags & O_ACCMODE) != O_RDONLY)
-		return -EROFS;
-	FIL *fp = calloc(1, sizeof(FIL));
-	FRESULT fres = f_open(fp, fffpath, flags2ffmode(fi->flags));
-	if (fres != FR_OK) {
-		free(fp);
-		return fr2errno(fres);
-	}
-	fi->fh = (typeof(fi->fh)) fp;
-	return 0;
-}
-
-static int fff_create(const char *path, mode_t mode, struct fuse_file_info *fi){
-	(void) mode;  // XXX support rdonly
-	struct fuse_context *cntx=fuse_get_context();
-	struct fftab *ffentry = cntx->private_data;
-	const char fffpath(ffentry->index, path);
-	if (ffentry->flags & FFFF_RDONLY)
-		return -EROFS;
-	FIL *fp = calloc(1, sizeof(FIL));
-	FRESULT fres = f_open(fp, fffpath, flags2ffmode(fi->flags | O_CREAT));
-	if (fres != FR_OK) {
-		free(fp);
-		return fr2errno(fres);
-	}
-	fi->fh = (typeof(fi->fh)) fp;
-	return 0;
-}
-
-static int fff_release(const char *path, struct fuse_file_info *fi){
-	(void) path;
-	FIL *fp = (FIL *) fi->fh;
-	FRESULT fres = f_close(fp);
-	free(fp);
-	return fr2errno(fres);
-}
-
-static int fff_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
-	(void) path;
-	FIL *fp = (FIL *) fi->fh;
-	UINT br;
-	FRESULT fres = f_lseek(fp, offset);
-	if (fres != FR_OK) return fr2errno(fres);
-	fres = f_read(fp, buf, size, &br);
-	if (fres != FR_OK) return fr2errno(fres);
-	return br;
-}
-
-static int fff_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
-	(void) path;
-	FIL *fp = (FIL *) fi->fh;
-	UINT br;
-	FRESULT fres = f_lseek(fp, offset);
-	if (fres != FR_OK) return fr2errno(fres);
-	fres = f_write(fp, buf, size, &br);
-	if (fres != FR_OK) return fr2errno(fres);
-	fres = f_sync(fp);
-	if (fres != FR_OK) return fr2errno(fres);
-	return br;
-}
-
-static int fff_opendir(const char *path, struct fuse_file_info *fi){
-	struct fuse_context *cntx=fuse_get_context();
-	struct fftab *ffentry = cntx->private_data;
-	const char fffpath(ffentry->index, path);
-	DIR *dp = calloc(1, sizeof(DIR));
-	FRESULT fres = f_opendir(dp, fffpath);
-	if (fres != FR_OK) {
-		free(dp);
-		return fr2errno(fres);
-	}
-	fi->fh = (typeof(fi->fh)) dp;
-	return 0;
-}
-
-static int fff_releasedir(const char *path, struct fuse_file_info *fi){
-	(void) path;
-	DIR *dp = (DIR *) fi->fh;
-	FRESULT fres = f_closedir(dp);
-	free(dp);
-	return fr2errno(fres);
-}
-
-static int fff_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
-		off_t offset, struct fuse_file_info *fi){
-	(void) path;
-	(void) offset;
-	DIR *dp = (DIR *) fi->fh;
-	filler(buf, ".", NULL, 0);
-	filler(buf, "..", NULL, 0);
-	while(1) {
-		FILINFO fileinfo;
-		FRESULT fres = f_readdir(dp, &fileinfo);
-		if (fres != FR_OK) return fr2errno(fres);
-		if (fileinfo.fname[0] == 0) break;
-		filler(buf, fileinfo.fname, NULL, 0);
-	}
-	return 0;
-}
-#endif
 
 static int fff_mkdir(const char *path, mode_t mode) {
 	(void) mode;  // XXX set readonly
