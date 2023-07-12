@@ -5,14 +5,14 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
- * along with this program; If not, see <http://www.gnu.org/licenses/>. 
+ * along with this program; If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -25,12 +25,18 @@
 #include <fuse.h>
 #include <time.h>
 #include <stddef.h>
+#include <pthread.h>
 
 #include <ff.h>
 #include <fftable.h>
 #include <config.h>
 
 int fuse_reentrant_tag = 0;
+
+static pthread_mutex_t fff_mutex = PTHREAD_MUTEX_INITIALIZER;
+#define mutex_in() pthread_mutex_lock(&fff_mutex)
+#define mutex_out() pthread_mutex_unlock(&fff_mutex)
+#define mutex_out_return(RETVAL) do {mutex_out(); return(RETVAL); } while (0)
 
 #define fffpath(index, path) \
   *fffpath; \
@@ -101,20 +107,22 @@ static time_t fftime2time(WORD fdate, WORD ftime) {
 
 static int fff_getattr(const char *path, struct stat *stbuf)
 {
+	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
+	FRESULT fres;
 	// f_stat path: The object must not be the root directory */
 	if (strcmp(path, "/") == 0) {
 		memset(stbuf, 0, sizeof(struct stat));
 		stbuf->st_mode = 0755 | S_IFDIR;
 		stbuf->st_nlink = 2;
-		return 0;
+		mutex_out_return(0);
 	} else {
 		const char fffpath(ffentry->index, path);
 		FILINFO fileinfo;
-		FRESULT fres = f_stat(fffpath, &fileinfo);
+		fres = f_stat(fffpath, &fileinfo);
 		//printf("getattr %s %s -> %d\n", path, fffpath, fres);
-		if (fres != FR_OK) return fr2errno(fres);
+		if (fres != FR_OK) goto err;
 		memset(stbuf, 0, sizeof(struct stat));
 		stbuf->st_size = fileinfo.fsize;
 		stbuf->st_ctime = stbuf->st_mtime =
@@ -129,36 +137,39 @@ static int fff_getattr(const char *path, struct stat *stbuf)
 		if (fileinfo.fattrib & AM_RDO)
 			stbuf->st_mode &= ~0222;
 	}
-	return 0;
+	mutex_out_return(0);
+err:
+	mutex_out_return(fr2errno(fres));
 }
 
 static int fff_open(const char *path, struct fuse_file_info *fi){
+	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
 	const char fffpath(ffentry->index, path);
 	if ((ffentry->flags & FFFF_RDONLY) && (fi->flags & O_ACCMODE) != O_RDONLY)
-		return -EROFS;
+		mutex_out_return(-EROFS);
 	FIL fp;
 	FRESULT fres = f_open(&fp, fffpath, flags2ffmode(fi->flags));
-	if (fres != FR_OK)
-		return fr2errno(fres);
-	f_close(&fp);
-	return 0;
+	if (fres == FR_OK)
+		f_close(&fp);
+	mutex_out_return(fr2errno(fres));
 }
 
 static int fff_create(const char *path, mode_t mode, struct fuse_file_info *fi){
 	(void) fi;
 	(void) mode; // XXX set readonly?
+	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
 	const char fffpath(ffentry->index, path);
 	if (ffentry->flags & FFFF_RDONLY)
-		return -EROFS;
+		mutex_out_return(-EROFS);
 	FIL fp;
 	FRESULT fres = f_open(&fp, fffpath, flags2ffmode(fi->flags | O_CREAT));
-	if (fres != FR_OK)
-		return fr2errno(fres);
-	return 0;
+	if (fres == FR_OK)
+		f_close(&fp);
+	mutex_out_return(fr2errno(fres));
 }
 
 static int fff_release(const char *path, struct fuse_file_info *fi){
@@ -168,6 +179,7 @@ static int fff_release(const char *path, struct fuse_file_info *fi){
 }
 
 static int fff_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
+	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
 	const char fffpath(ffentry->index, path);
@@ -175,52 +187,55 @@ static int fff_read(const char *path, char *buf, size_t size, off_t offset, stru
 	UINT br;
 	FRESULT fres = f_open(&fp, fffpath, flags2ffmode(fi->flags));
 	if (fres != FR_OK)
-		return fr2errno(fres);
+		goto earlyerr;
 	fres = f_lseek(&fp, offset);
 	if (fres != FR_OK) goto err;
 	fres = f_read(&fp, buf, size, &br);
 	if (fres != FR_OK) goto err;
 	f_close(&fp);
-	return br;
+	mutex_out_return(br);
 err:
 	f_close(&fp);
-	return fr2errno(fres);
+earlyerr:
+	mutex_out_return(fr2errno(fres));
 }
 
 static int fff_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
+	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
 	const char fffpath(ffentry->index, path);
 	FIL fp;
-	UINT br;
+	UINT bw;
 	if (ffentry->flags & FFFF_RDONLY)
-		return -EROFS;
+		mutex_out_return(-EROFS);
 	FRESULT fres = f_open(&fp, fffpath, flags2ffmode(fi->flags));
 	if (fres != FR_OK)
-		return fr2errno(fres);
+		goto earlyerr;
 	fres = f_lseek(&fp, offset);
 	if (fres != FR_OK) goto err;
-	fres = f_write(&fp, buf, size, &br);
+	fres = f_write(&fp, buf, size, &bw);
 	if (fres != FR_OK) goto err;
 	fres = f_sync(&fp);
 	if (fres != FR_OK) goto err;
 	f_close(&fp);
-	return br;
+	mutex_out_return(bw);
 err:
 	f_close(&fp);
-	return fr2errno(fres);
-
+earlyerr:
+	mutex_out_return(fr2errno(fres));
 }
 
 static int fff_opendir(const char *path, struct fuse_file_info *fi){
 	(void) fi;
+	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
 	const char fffpath(ffentry->index, path);
 	DIR dp;
 	FRESULT fres = f_opendir(&dp, fffpath);
 	f_closedir(&dp);
-	return fr2errno(fres);
+	mutex_out_return(fr2errno(fres));
 }
 
 static int fff_releasedir(const char *path, struct fuse_file_info *fi){
@@ -233,109 +248,112 @@ static int fff_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		off_t offset, struct fuse_file_info *fi){
 	(void) offset;
 	(void) fi;
+	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
 	const char fffpath(ffentry->index, path);
 	DIR dp;
 	FRESULT fres = f_opendir(&dp, fffpath);
-	if (fres != FR_OK) return fr2errno(fres);
+	if (fres != FR_OK)
+		goto mutexout_leave;
 	filler(buf, ".", NULL, 0);
 	filler(buf, "..", NULL, 0);
 	while(1) {
 		FILINFO fileinfo;
 		fres = f_readdir(&dp, &fileinfo);
-		if (fres != FR_OK) goto err;
+		if (fres != FR_OK) break;
 		if (fileinfo.fname[0] == 0) break;
 		filler(buf, fileinfo.fname, NULL, 0);
 	}
 	f_closedir(&dp);
-	return 0;
-err:
-	f_closedir(&dp);
-	return fr2errno(fres);
+mutexout_leave:
+	mutex_out_return(fr2errno(fres));
 }
 
 static int fff_mkdir(const char *path, mode_t mode) {
 	(void) mode;  // XXX set readonly
+	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
 	const char fffpath(ffentry->index, path);
 	if (ffentry->flags & FFFF_RDONLY)
-		return -EROFS;
+		mutex_out_return(-EROFS);
 	FRESULT fres = f_mkdir(fffpath);
 	if (fres != FR_OK) return fr2errno(fres);
 	// XXX mode?
-	return 0;
+	mutex_out_return(0);
 }
 
 static int fff_unlink(const char *path) {
+	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
 	const char fffpath(ffentry->index, path);
 	if (ffentry->flags & FFFF_RDONLY)
-		return -EROFS;
+		mutex_out_return(-EROFS);
 	// XXX ck is it reg file ?
 	FRESULT fres = f_unlink(fffpath);
-	if (fres != FR_OK) return fr2errno(fres);
-	return 0;
+	mutex_out_return(fr2errno(fres));
 }
 
 static int fff_rmdir(const char *path) {
+	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
 	const char fffpath(ffentry->index, path);
 	if (ffentry->flags & FFFF_RDONLY)
-		return -EROFS;
+		mutex_out_return(-EROFS);
 	// XXX ck is it a dir ?
 	FRESULT fres = f_unlink(fffpath);
-	if (fres != FR_OK) return fr2errno(fres);
-	return 0;
+	mutex_out_return(fr2errno(fres));
 }
 
 static int fff_rename(const char *path, const char *newpath) {
+	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
 	const char fffpath(ffentry->index, path);
 	if (ffentry->flags & FFFF_RDONLY)
-		return -EROFS;
+		mutex_out_return(-EROFS);
 	FRESULT fres = f_rename(fffpath, newpath);
-	if (fres != FR_OK) return fr2errno(fres);
-	return 0;
+	mutex_out_return(fr2errno(fres));
 }
 
 static int fff_truncate(const char *path, off_t size) {
+	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
 	const char fffpath(ffentry->index, path);
 	if (ffentry->flags & FFFF_RDONLY)
-		return -EROFS;
+		mutex_out_return(-EROFS);
 	FIL fp;
 	memset(&fp, 0, sizeof(fp));
 	FRESULT fres = f_open(&fp, fffpath, FA_WRITE);
-	if (fres != FR_OK)  fr2errno(fres);
+	if (fres != FR_OK) goto openerr;
 	fres = f_lseek(&fp, size);
 	if (fres != FR_OK) goto err;
 	fres = f_truncate(&fp);
 	if (fres != FR_OK) goto err;
 	fres = f_close(&fp);
-	if (fres != FR_OK) return fr2errno(fres);
-	return 0;
+openerr:
+	mutex_out_return(fr2errno(fres));
 err:
 	f_close(&fp);
-	return fr2errno(fres);
+	mutex_out_return(fr2errno(fres));
 }
 
 static int fff_utimens(const char *path, const struct timespec tv[2]) {
+	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
   struct fftab *ffentry = cntx->private_data;
   const char fffpath(ffentry->index, path);
-  if (ffentry->flags & FFFF_RDONLY)
-    return -EROFS;
+	if (ffentry->flags & FFFF_RDONLY)
+		mutex_out_return(-EROFS);
 	FILINFO fno;
 	struct tm tm;
 	time_t newtime = tv[1].tv_sec;
 	if (localtime_r(&newtime, &tm) == NULL)
-		return -EINVAL;
+		mutex_out_return(-EINVAL);
 	fno.fdate =
 		/* bit15:9: Year origin from the 1980 (0..127, e.g. 37 for 2017) */
 		(((tm.tm_year - 80) & 0x7f) << 9) |
@@ -351,7 +369,7 @@ static int fff_utimens(const char *path, const struct timespec tv[2]) {
 		/* bit4:0 Second / 2 (0..29, e.g. 25 for 50) */
 		((tm.tm_sec & 0x3f) / 2);
 	FRESULT fres = f_utime(fffpath, &fno);
-	return fr2errno(fres);
+	mutex_out_return(fr2errno(fres));
 }
 
 static struct fftab *fff_init(const char *source, int flags) {
