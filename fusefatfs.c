@@ -33,6 +33,8 @@
 
 int fuse_reentrant_tag = 0;
 
+#define FAT_DEFAULT_CODEPAGE 850
+
 static pthread_mutex_t fff_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define mutex_in() pthread_mutex_lock(&fff_mutex)
 #define mutex_out() pthread_mutex_unlock(&fff_mutex)
@@ -398,7 +400,7 @@ static int fff_statfs(const char *path, struct statvfs *buf) {
   mutex_out_return(fr2errno(fres));
 }
 
-static struct fftab *fff_init(const char *source, int flags) {
+static struct fftab *fff_init(const char *source, int codepage, int flags) {
 	int index = fftab_new(source, flags);
 	if (index >= 0) {
 		struct fftab *ffentry = fftab_get(index);
@@ -409,6 +411,13 @@ static struct fftab *fff_init(const char *source, int flags) {
 			fftab_del(index);
 			return NULL;
 		}
+		if (codepage != 0) {
+			if (f_setcp(codepage) != FR_OK) {
+				fprintf(stderr, "codepage %d unavailable\n", codepage);
+				f_setcp(FAT_DEFAULT_CODEPAGE);
+			}
+		} else
+			f_setcp(FAT_DEFAULT_CODEPAGE);
 		return ffentry;
 	} else
 		return NULL;
@@ -455,6 +464,7 @@ static void usage(void)
 			"    -o rw+    enable write support\n"
 			"    -o rw     enable write support only together with -force\n"
 			"    -o force  enable write support only together with -rw\n"
+			"    -o codepage=XXX  set codepage (default 850)\n"
 			"\n"
 			"    this software is still experimental\n"
 			"\n");
@@ -467,6 +477,7 @@ struct options {
 	int rw;
 	int rwplus;
 	int force;
+	int codepage;
 };
 
 #define FFF_OPT(t, p, v) { t, offsetof(struct options, p), v }
@@ -477,6 +488,7 @@ static struct fuse_opt fff_opts[] =
 	FFF_OPT("rw", rw, 1),
 	FFF_OPT("rw+", rwplus, 1),
 	FFF_OPT("force", force, 1),
+	FFF_OPT("codepage=%u", codepage, 1),
 
 	FUSE_OPT_KEY("-V", 'V'),
 	FUSE_OPT_KEY("--version", 'V'),
@@ -558,7 +570,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (options.ro) flags |= FFFF_RDONLY;
-	if ((ffentry = fff_init(options.source, flags)) == NULL) {
+	if ((ffentry = fff_init(options.source, options.codepage, flags)) == NULL) {
 		fprintf(stderr, "Fuse init error\n");
 		goto returnerr;
 	}
