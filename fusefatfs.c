@@ -372,6 +372,32 @@ static int fff_utimens(const char *path, const struct timespec tv[2]) {
 	mutex_out_return(fr2errno(fres));
 }
 
+static int fff_statfs(const char *path, struct statvfs *buf) {
+	(void) path;
+	mutex_in();
+  struct fuse_context *cntx=fuse_get_context();
+  struct fftab *ffentry = cntx->private_data;
+  const char fffpath(ffentry->index, "");
+	memset(buf, 0, sizeof(*buf));
+	FATFS *fs;
+	DWORD fre_clust;
+  FRESULT fres = f_getfree(fffpath, &fre_clust, &fs);
+	if (fres == FR_OK) {
+		WORD ssize =
+#if FF_MAX_SS != FF_MIN_SS
+			fs->ssize
+#else
+			FF_MAX_SS
+#endif
+			;
+		buf->f_bsize = buf->f_frsize = fs->csize * ssize;
+		buf->f_blocks = ((fs->n_fatent - 2) * ssize) / S_BLKSIZE;
+		buf->f_bfree = buf->f_bavail = (fre_clust * ssize) / S_BLKSIZE;
+		buf->f_namemax = 255;
+	}
+  mutex_out_return(fr2errno(fres));
+}
+
 static struct fftab *fff_init(const char *source, int flags) {
 	int index = fftab_new(source, flags);
 	if (index >= 0) {
@@ -411,6 +437,7 @@ static const struct fuse_operations fusefat_ops = {
 	.rename         = fff_rename,
 	.truncate       = fff_truncate,
 	.utimens        = fff_utimens,
+	.statfs         = fff_statfs,
 };
 
 static void usage(void)
