@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 project(fusefatfs
-    VERSION 0.1
+    VERSION 0.2
     DESCRIPTION "fuse/vuos module for fat (12/16/32/exfat)"
     HOMEPAGE_URL "https://github.com/virtualsquare/fusefatfs"
     LANGUAGES C)

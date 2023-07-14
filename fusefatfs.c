@@ -33,6 +33,12 @@
 
 int fuse_reentrant_tag = 0;
 
+#if FF_DEFINED == 80286
+#define FF_VERSION "0.15"
+#else
+#error FuseFat version mismaatch
+#endif
+
 #define FAT_DEFAULT_CODEPAGE 850
 
 static pthread_mutex_t fff_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -521,7 +527,7 @@ fff_opt_proc(void *data, const char *arg, int key, struct fuse_args *outargs)
 			return -1;
 
 		case 'V':
-			fprintf(stderr, PROGNAME " version %s\n", VERSION);
+			fprintf(stderr, PROGNAME " version %s -- FatFS %s\n", VERSION, FF_VERSION);
 			fuse_opt_add_arg(outargs, "--version");
 			fuse_main(outargs->argc, outargs->argv, &fusefat_ops, NULL);
 			return -1;
