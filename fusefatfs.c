@@ -436,6 +436,12 @@ static void fff_destroy(struct fftab *ffentry) {
 	fftab_del(ffentry->index);
 }
 
+int fff_access (const char *path, int mode) {
+	(void) path;
+	(void) mode;
+	return 0;
+}
+
 static const struct fuse_operations fusefat_ops = {
 	.getattr  = fff_getattr,
 	.open           = fff_open,
@@ -453,6 +459,7 @@ static const struct fuse_operations fusefat_ops = {
 	.truncate       = fff_truncate,
 	.utimens        = fff_utimens,
 	.statfs         = fff_statfs,
+	.access         = fff_access,
 };
 
 static void usage(void)
