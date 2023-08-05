@@ -1,5 +1,6 @@
 /*-----------------------------------------------------------------------*/
 /* Low level disk I/O module skeleton for FatFs     (C)ChaN, 2019        */
+/* Customized for fusefatfs 2020-2023 Renzo Davoli                       */
 /*-----------------------------------------------------------------------*/
 /* If a working storage control module is available, it should be        */
 /* attached to the FatFs via a glue function rather than modifying it.   */
@@ -72,10 +73,8 @@ DRESULT disk_read (
 #else
 	ssize = FF_MIN_SS;
 #endif
-	//printf("disk_read %d\n", drv->fd);
-	if (lseek(drv->fd, sector * ssize, SEEK_SET) < 0)
-		return RES_ERROR;
-	if (read(drv->fd, buff, count * ssize) != count * ssize)
+	ssize_t size = count * ssize;
+	if (pread(drv->fd, buff, size, sector * ssize) != size)
 		return RES_ERROR;
 
 	res = RES_OK;
@@ -107,10 +106,9 @@ DRESULT disk_write (
 #endif
 	if (drv->flags & FFFF_RDONLY)
 		return RES_WRPRT;
-  if (lseek(drv->fd, sector * ssize, SEEK_SET) < 0)
-    return RES_ERROR;
-  if (write(drv->fd, buff, count * ssize) != count * ssize)
-    return RES_ERROR;
+	ssize_t size = count * ssize;
+	if (pwrite(drv->fd, buff, size, sector * ssize) != size)
+		return RES_ERROR;
 
   res = RES_OK;
   return res;
