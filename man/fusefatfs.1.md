@@ -25,7 +25,7 @@
 
 # NAME
 
-fusefatfs, vufusefatfs - mount FAT file systems using FUSE anf vufuse
+fusefatfs, vufusefatfs - mount FAT file systems using FUSE and vufuse
 
 # SYNOPSIS
 
@@ -44,7 +44,7 @@ It supports FAT12, FAT16, FAT32 and exFAT formats.
 
 # OPTIONS
 
-`fusefatfs` is build upon FUSE ((Filesystem in Userspace) library.
+`fusefatfs` is build upon FUSE (Filesystem in Userspace) library.
 the  complete  set  of available options depends upon the specific
 FUSE installed.  Execute `fusefatfs -h` to retrieve the actual complete
 list.
