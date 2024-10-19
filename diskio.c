@@ -144,7 +144,7 @@ DRESULT disk_ioctl (
 	return RES_PARERR;
 }
 
-DWORD get_fattime() 
+DWORD get_fattime(void)
 { 
 	struct tm tm;
 	time_t now = time(NULL);
