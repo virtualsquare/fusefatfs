@@ -1,5 +1,5 @@
 # fusefatfs
-mount FAT file systems using FUSE anf VUOS/vufuse
+mount FAT file systems using FUSE and VUOS/vufuse
 
 This repository generates both the `fusefatfs` command for 
 [FUSE (Filesystem in Userspace)](https://github.com/libfuse/libfuse)
