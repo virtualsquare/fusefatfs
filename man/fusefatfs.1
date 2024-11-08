@@ -58,22 +58,22 @@ display a usage and options summary
 display version
 .SS fusefatfs specific options
 .TP
-\f[CB]\-ro\f[R]
+\f[CB]\-o ro\f[R]
 mount the file system in read\-only mode.
 .TP
-\f[CB]\-rw\f[R]
+\f[CB]\-o rw\f[R]
 mount the file system in read\-write mode only if also
-\f[CB]\-force\f[R] is present.
+\f[CB]\-o force\f[R] is present.
 Read\-write mounting can potentially manage the file system structure so
 an
 extra option is required to test the awareness fo the user.
 .TP
-\f[CB]\-force\f[R]
+\f[CB]\-o force\f[R]
 confirm the request of read\-write access.
 .TP
-\f[CB]\-rw+\f[R]
+\f[CB]\-o rw+\f[R]
 mount the file system in read\-write mode, a shortcut of
-\f[CB]\-rw \-force\f[R].
+\f[CB]\-o rw,force\f[R].
 .SS main FUSE mount options
 These options are not valid in VUOS/vufuse.
 .TP

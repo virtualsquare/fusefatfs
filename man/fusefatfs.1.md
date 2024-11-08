@@ -62,19 +62,19 @@ list.
 
 ### fusefatfs specific options
 
-  `-ro`
+  `-o ro`
 : mount the file system in read-only mode.
 
-  `-rw`
-: mount the file system in read-write mode only if also `-force` is present.
+  `-o rw`
+: mount the file system in read-write mode only if also `-o force` is present.
 : Read-write mounting can potentially manage the file system structure so an
 : extra option is required to test the awareness fo the user.
 
-  `-force`
+  `-o force`
 : confirm the request of read-write access.
 
-  `-rw+`
-: mount the file system in read-write mode, a shortcut of `-rw -force`.
+  `-o rw+`
+: mount the file system in read-write mode, a shortcut of `-o rw,force`.
 
 ### main FUSE mount options
 
