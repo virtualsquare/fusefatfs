@@ -37,7 +37,7 @@ in a `umvu` session:
 
 # DESCRIPTION
 
-`fusefatfs` mounts the file tree contained in *disk_image* on the directory *mountpoint* .
+`fusefatfs` mounts the file tree contained in *disk_image* on the directory *mountpoint*.
 It supports FAT12, FAT16, FAT32 and exFAT formats.
 
 `vufusefatfs` is the VUOS/vufuse submodule of `fusefatfs`
