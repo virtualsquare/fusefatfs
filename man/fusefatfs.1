@@ -35,7 +35,7 @@ in a \f[CB]umvu\f[R] session:
 \f[I]disk_image\f[R] \f[I]mountpoint\f[R]
 .SH DESCRIPTION
 \f[CB]fusefatfs\f[R] mounts the file tree contained in
-\f[I]disk_image\f[R] on the directory \f[I]mountpoint\f[R] .
+\f[I]disk_image\f[R] on the directory \f[I]mountpoint\f[R].
 It supports FAT12, FAT16, FAT32 and exFAT formats.
 .PP
 \f[CB]vufusefatfs\f[R] is the VUOS/vufuse submodule of
@@ -58,22 +58,22 @@ display a usage and options summary
 display version
 .SS fusefatfs specific options
 .TP
-\f[CB]\-ro\f[R]
+\f[CB]\-o ro\f[R]
 mount the file system in read\-only mode.
 .TP
-\f[CB]\-rw\f[R]
+\f[CB]\-o rw\f[R]
 mount the file system in read\-write mode only if also
-\f[CB]\-force\f[R] is present.
+\f[CB]\-o force\f[R] is present.
 Read\-write mounting can potentially manage the file system structure so
 an
 extra option is required to test the awareness fo the user.
 .TP
-\f[CB]\-force\f[R]
+\f[CB]\-o force\f[R]
 confirm the request of read\-write access.
 .TP
-\f[CB]\-rw+\f[R]
+\f[CB]\-o rw+\f[R]
 mount the file system in read\-write mode, a shortcut of
-\f[CB]\-rw \-force\f[R].
+\f[CB]\-o rw,force\f[R].
 .SS main FUSE mount options
 These options are not valid in VUOS/vufuse.
 .TP
@@ -89,7 +89,7 @@ disable multi\-threaded operation
 \f[CB]fuse\f[R](8), \f[CB]umvu\f[R](1)
 .SH CREDITS
 \f[CB]fusefatfs\f[R] is based on the FAT file system module for embedded
-sytems \f[CB]fatfs\f[R] developed by ChaN:
+systems \f[CB]fatfs\f[R] developed by ChaN:
 \f[I]http://elm\-chan.org\f[R].
 .SH AUTHOR
 VirtualSquare.

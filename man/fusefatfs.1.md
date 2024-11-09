@@ -37,7 +37,7 @@ in a `umvu` session:
 
 # DESCRIPTION
 
-`fusefatfs` mounts the file tree contained in *disk_image* on the directory *mountpoint* .
+`fusefatfs` mounts the file tree contained in *disk_image* on the directory *mountpoint*.
 It supports FAT12, FAT16, FAT32 and exFAT formats.
 
 `vufusefatfs` is the VUOS/vufuse submodule of `fusefatfs`
@@ -62,19 +62,19 @@ list.
 
 ### fusefatfs specific options
 
-  `-ro`
+  `-o ro`
 : mount the file system in read-only mode.
 
-  `-rw`
-: mount the file system in read-write mode only if also `-force` is present.
+  `-o rw`
+: mount the file system in read-write mode only if also `-o force` is present.
 : Read-write mounting can potentially manage the file system structure so an
 : extra option is required to test the awareness fo the user.
 
-  `-force`
+  `-o force`
 : confirm the request of read-write access.
 
-  `-rw+`
-: mount the file system in read-write mode, a shortcut of `-rw -force`.
+  `-o rw+`
+: mount the file system in read-write mode, a shortcut of `-o rw,force`.
 
 ### main FUSE mount options
 
@@ -93,7 +93,7 @@ list.
 `fuse`(8), `umvu`(1)
 
 # CREDITS
-`fusefatfs` is based on the FAT file system module for embedded sytems `fatfs` 
+`fusefatfs` is based on the FAT file system module for embedded systems `fatfs`
 developed by ChaN:
 *http://elm-chan.org*.
 
