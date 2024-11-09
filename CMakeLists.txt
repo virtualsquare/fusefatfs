@@ -9,33 +9,22 @@ include(GNUInstallDirs)
 include(CheckIncludeFile)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
-# check availability of headers and libs
-set(HEADERS_REQUIRED fuse.h)
-set(LIBS_REQUIRED fuse)
+find_package(PkgConfig)
+pkg_check_modules(FUSE fuse3)
+if(NOT FUSE_FOUND)
+	pkg_check_modules(FUSE REQUIRED fuse)
+endif()
+string(REGEX REPLACE "\\..*" "" FUSE_VERSION ${FUSE_VERSION})
 
 set(CMAKE_REQUIRED_DEFINITIONS -D_FILE_OFFSET_BITS=64)
-
-foreach(HEADER IN LISTS HEADERS_REQUIRED)
-  check_include_file(${HEADER} ${HEADER}_OK)
-  if(NOT ${HEADER}_OK)
-    message(FATAL_ERROR "header file ${HEADER} not found")
-  endif()
-endforeach(HEADER)
-
-foreach(THISLIB IN LISTS LIBS_REQUIRED)
-  find_library(LIB${THISLIB}_OK ${THISLIB})
-  if(NOT LIB${THISLIB}_OK)
-    message(FATAL_ERROR "library lib${THISLIB} not found")
-  endif()
-endforeach(THISLIB)
 
 configure_file(config.h.in config.h @ONLY)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_FORTIFY_SOURCE=2 -O2 -pedantic -Wall -Wextra")
 
-add_definitions(-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64)
+add_definitions(-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 ${FUSE_CFLAGS} -DFUSE=${FUSE_VERSION})
 
 add_executable(fusefatfs fusefatfs.c fftable.c diskio.c ff.c ffunicode.c)
-target_link_libraries(fusefatfs fuse)
+target_link_libraries(fusefatfs ${FUSE_LIBRARIES})
 install(TARGETS fusefatfs
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
@@ -49,4 +38,3 @@ add_subdirectory(man)
 add_custom_target(uninstall
   "${CMAKE_COMMAND}" -P "${PROJECT_SOURCE_DIR}/Uninstall.cmake"
   )
-
