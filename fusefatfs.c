@@ -360,7 +360,7 @@ static int fff_utimens(const char *path, const struct timespec tv[2]) {
 	FILINFO fno;
 	struct tm tm;
 	time_t newtime = tv[1].tv_sec;
-	if (localtime_r(&newtime, &tm) == NULL)
+	if (gmtime_r(&newtime, &tm) == NULL)
 		mutex_out_return(-EINVAL);
 	fno.fdate =
 		/* bit15:9: Year origin from the 1980 (0..127, e.g. 37 for 2017) */
@@ -552,6 +552,7 @@ int main(int argc, char *argv[])
 	struct fftab *ffentry;
 	int flags = 0;
 	struct stat sbuf;
+	putenv("TZ=UTC0");
 	if (fuse_opt_parse(&args, &options, fff_opts, fff_opt_proc) == -1) {
 		fuse_opt_free_args(&args);
 		return -1;
