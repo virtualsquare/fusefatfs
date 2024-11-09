@@ -93,7 +93,7 @@ list.
 `fuse`(8), `umvu`(1)
 
 # CREDITS
-`fusefatfs` is based on the FAT file system module for embedded sytems `fatfs` 
+`fusefatfs` is based on the FAT file system module for embedded systems `fatfs`
 developed by ChaN:
 *http://elm-chan.org*.
 
