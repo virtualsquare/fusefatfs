@@ -16,7 +16,13 @@
  *
  */
 
+#if FUSE == 2
 #define FUSE_USE_VERSION 29
+#define FUSE3_ONLY(...)
+#else
+#define FUSE_USE_VERSION FUSE_MAKE_VERSION(3, 14)
+#define FUSE3_ONLY(...) __VA_ARGS__
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -113,8 +119,9 @@ static time_t fftime2time(WORD fdate, WORD ftime) {
 	}
 }
 
-static int fff_getattr(const char *path, struct stat *stbuf)
+static int fff_getattr(const char *path, struct stat *stbuf FUSE3_ONLY(, struct fuse_file_info *fi))
 {
+	FUSE3_ONLY((void) fi);
 	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
@@ -253,9 +260,10 @@ static int fff_releasedir(const char *path, struct fuse_file_info *fi){
 }
 
 static int fff_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
-		off_t offset, struct fuse_file_info *fi){
+		off_t offset, struct fuse_file_info *fi FUSE3_ONLY(, enum fuse_readdir_flags fl)){
 	(void) offset;
 	(void) fi;
+	FUSE3_ONLY((void) fl);
 	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
@@ -264,14 +272,14 @@ static int fff_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	FRESULT fres = f_opendir(&dp, fffpath);
 	if (fres != FR_OK)
 		goto mutexout_leave;
-	filler(buf, ".", NULL, 0);
-	filler(buf, "..", NULL, 0);
+	filler(buf, ".", NULL, 0 FUSE3_ONLY(, 0));
+	filler(buf, "..", NULL, 0 FUSE3_ONLY(, 0));
 	while(1) {
 		FILINFO fileinfo;
 		fres = f_readdir(&dp, &fileinfo);
 		if (fres != FR_OK) break;
 		if (fileinfo.fname[0] == 0) break;
-		filler(buf, fileinfo.fname, NULL, 0);
+		filler(buf, fileinfo.fname, NULL, 0 FUSE3_ONLY(, 0));
 	}
 	f_closedir(&dp);
 mutexout_leave:
@@ -316,7 +324,9 @@ static int fff_rmdir(const char *path) {
 	mutex_out_return(fr2errno(fres));
 }
 
-static int fff_rename(const char *path, const char *newpath) {
+static int fff_rename(const char *path, const char *newpath FUSE3_ONLY(, unsigned int flags)) {
+	FUSE3_ONLY(if(flags) return -ENOSYS;)
+
 	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
@@ -327,7 +337,8 @@ static int fff_rename(const char *path, const char *newpath) {
 	mutex_out_return(fr2errno(fres));
 }
 
-static int fff_truncate(const char *path, off_t size) {
+static int fff_truncate(const char *path, off_t size FUSE3_ONLY(, struct fuse_file_info *fi)) {
+	FUSE3_ONLY((void) fi);
 	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
 	struct fftab *ffentry = cntx->private_data;
@@ -350,7 +361,8 @@ err:
 	mutex_out_return(fr2errno(fres));
 }
 
-static int fff_utimens(const char *path, const struct timespec tv[2]) {
+static int fff_utimens(const char *path, const struct timespec tv[2] FUSE3_ONLY(, struct fuse_file_info *fi)) {
+	FUSE3_ONLY((void) fi);
 	mutex_in();
 	struct fuse_context *cntx=fuse_get_context();
   struct fftab *ffentry = cntx->private_data;
