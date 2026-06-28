@@ -39,10 +39,12 @@
 
 int fuse_reentrant_tag = 0;
 
-#if FF_DEFINED == 80286
+#if FF_DEFINED == 80386
+#define FF_VERSION "0.16"
+#elif FF_DEFINED == 80286
 #define FF_VERSION "0.15"
 #else
-#error FuseFat version mismaatch
+#error FuseFat version mismatch
 #endif
 
 #define FAT_DEFAULT_CODEPAGE 850
